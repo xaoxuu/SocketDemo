@@ -46,12 +46,14 @@ class ViewController: UIViewController {
         
         tf_ip.text = IPAddress.ip()
         tf_server.text = "\(SocketManager.shared.clientSockets.count)个连接"
+        tf_server.layer.cornerRadius = 4
+        tf_client.layer.cornerRadius = 4
         tf_client.text = UserDefaults.standard.object(forKey: "ip") as? String
         tf_ip.backgroundColor = UIColor.groupTableViewBackground
         tf_ip.alpha = 0.5
-        tf_server.backgroundColor = UIColor.groupTableViewBackground
+        tf_server.layer.backgroundColor = UIColor.groupTableViewBackground.cgColor
         tf_server.alpha = 0.5
-        tf_client.backgroundColor = UIColor.clear
+        tf_client.layer.backgroundColor = UIColor.white.cgColor
         
         chatView.isHidden = true
         chatView.alpha = 0
@@ -67,10 +69,12 @@ class ViewController: UIViewController {
         }
         func resetTF() {
             UIView.animate(withDuration: 0.5) {
-                self.tf_server.backgroundColor = UIColor.groupTableViewBackground
+                self.tf_server.layer.backgroundColor = UIColor.groupTableViewBackground.cgColor
+                self.tf_server.layer.ax_removeColorAnimation()
                 self.tf_client.isEnabled = true
                 self.tf_client.alpha = 1
-                self.tf_client.backgroundColor = UIColor.clear
+                self.tf_client.layer.backgroundColor = UIColor.white.cgColor
+                self.tf_client.layer.ax_removeColorAnimation()
             }
             
         }
@@ -79,11 +83,13 @@ class ViewController: UIViewController {
                 self.tf_client.isEnabled = false
                 self.tf_client.alpha = 0.5
                 if character == SocketCharacter.server {
-                    self.tf_server.backgroundColor = UIColor.ax_green.light()
+                    self.tf_server.layer.backgroundColor = UIColor.ax_green.light().cgColor
+                    self.tf_server.layer.ax_animatedColor(UIColor.ax_green, duration: 1, repeatCount: MAXFLOAT)
                     self.sw_client.isEnabled = false
                     self.lb_sendMsg.text = "向客户端发送消息"
                 } else {
-                    self.tf_client.backgroundColor = UIColor.ax_green.light()
+                    self.tf_client.layer.backgroundColor = UIColor.ax_green.light().cgColor
+                    self.tf_client.layer.ax_animatedColor(UIColor.ax_green, duration: 1, repeatCount: MAXFLOAT)
                     self.sw_server.isEnabled = false
                     self.lb_sendMsg.text = "向服务端发送消息"
                 }
