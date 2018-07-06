@@ -165,15 +165,20 @@ class ViewController: UIViewController {
                 NoticeBoard.post(.error, message: "disconnect from server", duration: 3)
             }
         }
+        
+        let message = Notice()
         SocketManager.shared.onReceiveMessage { (host, str) in
-            var msg = "receive message"
             if let h = host {
-                msg = h + ": "
+                message.title = h
             }
             if let s = str {
-                msg += s
+                message.body = s
             }
-            NoticeBoard.post(.normal, message: msg, duration: 2)
+            message.setTheme(.normal)
+            message.actionButton?.isHidden = true
+            if NoticeBoard.shared.notices.contains(message) == false {
+                NoticeBoard.post(message, duration: 2)
+            }
             self.tv_msg.text = str
         }
         
@@ -191,6 +196,10 @@ class ViewController: UIViewController {
     @IBAction func startServer(_ sender: UISwitch) {
         if sender.isOn {
             SocketManager.shared.startServer(host: tf_ip.text!)
+            UIView.animate(withDuration: 0.5) {
+                self.tf_client.isEnabled = false
+                self.tf_client.alpha = 0.5
+            }
         } else {
             // 关闭服务
             SocketManager.shared.asyncSocket.disconnect()
@@ -200,6 +209,10 @@ class ViewController: UIViewController {
         if sender.isOn {
             UserDefaults.standard.set(tf_client.text, forKey: "ip")
             SocketManager.shared.connectServer(host: tf_client.text!)
+            UIView.animate(withDuration: 0.5) {
+                self.tf_server.isEnabled = false
+                self.tf_server.alpha = 0.5
+            }
         } else {
             SocketManager.shared.asyncSocket.disconnect()
         }
