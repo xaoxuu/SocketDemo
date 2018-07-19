@@ -10,7 +10,10 @@ import UIKit
 
 internal let debugMode = false
 
+@objcMembers
 open class NoticeBoard: NSObject {
+    
+    
     
     /// 布局样式
     ///
@@ -140,8 +143,8 @@ public extension NoticeBoard {
     @discardableResult
     public class func post(message: String?, duration: TimeInterval) -> Notice {
         let notice = Notice.init(title: nil, icon: nil, body: message)
-        notice.setTheme(.normal)
-        post(notice, duration: duration)
+        notice.themeColor = UIColor.ax_blue
+        shared.post(notice, duration: duration)
         return notice
     }
     
@@ -154,36 +157,43 @@ public extension NoticeBoard {
     @discardableResult
     public class func post(_ theme: Notice.Theme, message: String?, duration: TimeInterval) -> Notice {
         let notice = Notice.init(title: nil, icon: nil, body: message)
-        notice.setTheme(theme)
-        post(notice, duration: duration)
+        notice.themeColor = theme.rawValue
+        shared.post(notice, duration: duration)
         return notice
     }
+    
     /// post一条消息
     ///
     /// - Parameters:
-    ///   - color: 主题
+    ///   - theme: 主题
+    ///   - title: 标题
     ///   - message: 消息内容
     ///   - duration: 持续时间
     @discardableResult
-    public class func post(_ color: UIColor, message: String?, duration: TimeInterval) -> Notice {
-        let notice = Notice.init(title: nil, icon: nil, body: message)
-        notice.setTheme(color)
-        post(notice, duration: duration)
+    public class func post(_ theme: Notice.Theme, title: String?, message: String?, duration: TimeInterval) -> Notice {
+        let notice = Notice.init(title: title, icon: nil, body: message)
+        notice.themeColor = theme.rawValue
+        shared.post(notice, duration: duration)
         return notice
     }
+    
     /// post一条消息
     ///
     /// - Parameters:
-    ///   - blurEffect: 主题
+    ///   - theme: 主题
+    ///   - title: 标题
     ///   - message: 消息内容
     ///   - duration: 持续时间
+    ///   - action: 按钮事件
     @discardableResult
-    public class func post(_ blurEffectTheme: UIBlurEffectStyle, message: String?, duration: TimeInterval) -> Notice {
-        let notice = Notice.init(title: nil, icon: nil, body: message)
-        notice.setTheme(blurEffectTheme)
-        post(notice, duration: duration)
+    public class func post(_ theme: Notice.Theme, title: String?, message: String?, duration: TimeInterval, action: @escaping(Notice, UIButton) -> Void) -> Notice {
+        let notice = Notice.init(title: title, icon: nil, body: message)
+        notice.themeColor = theme.rawValue
+        notice.actionButtonDidTapped(action: action)
+        shared.post(notice, duration: duration)
         return notice
     }
+    
     
 }
 
@@ -191,31 +201,50 @@ public extension NoticeBoard {
 extension NoticeBoard {
     
     internal func post(_ notice: Notice, duration: TimeInterval, layout: LayoutStyle, animate: AnimationStyle) {
-        layoutStyle = layout
-        if layout == .remove {
-            clean(animate: animate, delay: 0)
-        }
-        
-        notice.translate(animate, .buildOut)
-        notice.makeKeyAndVisible()
-        
-        UIView.animate(withDuration: 1, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 0.7, options: [.allowUserInteraction, .curveEaseOut], animations: {
-            notice.translate(animate, .buildIn)
-            if layout == .replace {
-                self.clean(animate: .fade, delay: 0.5)
-            }
-            if self.notices.contains(notice) == false {
-                self.notices.append(notice)
-            }
-            self.updateLayout(from: 0)
-        }) { (completed) in
+        // 如果已经显示在页面上，就重新设置消失的时间
+        if notices.contains(notice) {
+            DispatchWorkItem.cancel(item: notice.workItem)
             if duration > 0 {
-                weak var weak = notice
-                DispatchWorkItem.postpone(duration, block: {
-                    self.remove(weak, animate: animate)
+                weak var n = notice
+                notice.workItem = DispatchWorkItem.postpone(duration, block: {
+                    self.remove(n, animate: animate)
                 })
             }
+        } else {
+            let t = notice.title
+            let b = notice.body
+            if t.count == 0 && b.count == 0 {
+                return
+            }
+            
+            layoutStyle = layout
+            if layout == .remove {
+                clean(animate: animate, delay: 0)
+            }
+            notice.updateContentFrame()
+            notice.translate(animate, .buildOut)
+            notice.makeKeyAndVisible()
+            
+            UIView.animate(withDuration: 1, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 0.7, options: [.allowUserInteraction, .curveEaseOut], animations: {
+                notice.translate(animate, .buildIn)
+                if layout == .replace {
+                    self.clean(animate: .fade, delay: 0.5)
+                }
+                if self.notices.contains(notice) == false {
+                    self.notices.append(notice)
+                }
+                self.updateLayout(from: 0)
+            }) { (completed) in
+                DispatchWorkItem.cancel(item: notice.workItem)
+                if duration > 0 {
+                    weak var n = notice
+                    notice.workItem = DispatchWorkItem.postpone(duration, block: {
+                        self.remove(n, animate: animate)
+                    })
+                }
+            }
         }
+        
     }
     
     internal func clean(animate: AnimationStyle, delay: TimeInterval) {
@@ -239,6 +268,7 @@ extension NoticeBoard {
             if let index = notices.index(of: bar) {
                 notices.remove(at: index)
                 updateLayout(from: index)
+                NotificationCenter.default.post(name: Notice.didRemoved, object: notice)
             }
         }
     }

@@ -9,17 +9,22 @@
 import UIKit
 import CocoaAsyncSocket
 import AXKit
+import NoticeBoard
 
-class SocketManager: NSObject, GCDAsyncSocketDelegate {
+let kPort = UInt16(5528)
+
+class SocketManager: NSObject, GCDAsyncSocketDelegate, GCDAsyncUdpSocketDelegate {
 
     public static let shared = SocketManager()
     lazy var asyncSocket: GCDAsyncSocket = {
-        
         return GCDAsyncSocket.init(delegate: self, delegateQueue: DispatchQueue.init(label: "com.xaoxuu.socket"))
+    }()
+    lazy var asyncUdpSocket: GCDAsyncUdpSocket = {
+        return GCDAsyncUdpSocket.init(delegate: self, delegateQueue: DispatchQueue.init(label: "com.xaoxuu.socket"))
     }()
     var clientSockets = [GCDAsyncSocket]()
     var host = ""
-    var port = UInt16(5528)
+    var port = kPort
     
     private var connectedHosts = [String:String]()
     
@@ -54,15 +59,27 @@ class SocketManager: NSObject, GCDAsyncSocketDelegate {
         }
         do {
             try asyncSocket.accept(onPort: port)
+            
             if let f = self.block_onConnect {
                 f(self.character, host, nil)
             }
+            UDPSocket.shared.broadcast(true)
         } catch {
             debugPrint(error)
             if let f = self.block_onConnect {
                 f(self.character, host, error)
             }
         }
+        
+    }
+    func endServer(){
+        let h = self.host
+        SocketManager.shared.asyncSocket.disconnect()
+        UDPSocket.shared.broadcast(false)
+        if let idx = UDPSocket.shared.hosts.index(of: h) {
+            UDPSocket.shared.hosts.remove(at: idx)
+        }
+        
         
     }
     func connectServer(host: String) {
@@ -83,6 +100,8 @@ class SocketManager: NSObject, GCDAsyncSocketDelegate {
     func sendData(data: Data) {
         asyncSocket.write(data, withTimeout: -1, tag: 0)
     }
+    
+    
     
     // MARK: - delegate
     // 在读取数据之前 服务端还需要监听 客户端有没有写入数据
@@ -130,6 +149,7 @@ class SocketManager: NSObject, GCDAsyncSocketDelegate {
         }
         sock.readData(withTimeout: -1, tag: 0)
     }
+    
     
     func socketDidDisconnect(_ sock: GCDAsyncSocket, withError err: Error?) {
         

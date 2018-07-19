@@ -15,7 +15,7 @@ enum SocketCharacter: Int {
     case client = 11
 }
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
     
     
@@ -174,7 +174,7 @@ class ViewController: UIViewController {
             if let s = str {
                 message.body = s
             }
-            message.setTheme(.normal)
+            
             message.actionButton?.isHidden = true
             if NoticeBoard.shared.notices.contains(message) == false {
                 NoticeBoard.post(message, duration: 2)
@@ -182,6 +182,14 @@ class ViewController: UIViewController {
             self.tv_msg.text = str
         }
         
+        let sharedNotice = Notice()
+        NotificationCenter.default.addObserver(forName: UDPSocket.shared.didUpdate, object: nil, queue: .main) { (note) in
+            
+            sharedNotice.body = UDPSocket.shared.hosts.description
+            sharedNotice.blurEffectStyle = .light
+            NoticeBoard.post(sharedNotice, duration: 3)
+        }
+        UDPSocket.shared.beginReceiving()
         
     }
 
@@ -191,6 +199,7 @@ class ViewController: UIViewController {
     }
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         view.endEditing(true)
+        
     }
     
     @IBAction func startServer(_ sender: UISwitch) {
@@ -202,7 +211,7 @@ class ViewController: UIViewController {
             }
         } else {
             // 关闭服务
-            SocketManager.shared.asyncSocket.disconnect()
+            SocketManager.shared.endServer()
         }
     }
     @IBAction func connectServer(_ sender: UISwitch) {
@@ -235,6 +244,55 @@ class ViewController: UIViewController {
             UIApplication.shared.openURL(url)
         }
     }
+    
+    let table = UITableView.init(frame: .zero, style: .plain)
+    func loadTable(frame: CGRect){
+        var f = frame
+        f.origin.y += f.size.height + 8
+        f.size.height = 100
+        table.frame = f
+        table.layer.borderWidth = 1
+        table.layer.borderColor = UIColor.ax_blue.cgColor
+        table.layer.cornerRadius = 4
+        table.dataSource = self
+        table.delegate = self
+        table.rowHeight = 32
+    }
+    
+    @IBAction func editingBegin(_ sender: UITextField) {
+        if UDPSocket.shared.hosts.count > 0 {
+            loadTable(frame: sender.frame)
+            view.addSubview(table)
+            table.reloadData()
+        }
+    }
+    
+    @IBAction func editingEnd(_ sender: UITextField) {
+        table.removeFromSuperview()
+        
+    }
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return UDPSocket.shared.hosts.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        var cell = tableView.dequeueReusableCell(withIdentifier: "cell")
+        if cell == nil {
+            cell = UITableViewCell.init(style: .default, reuseIdentifier: "cell")
+            cell?.textLabel?.font = UIFont.systemFont(ofSize: 13)
+            
+        }
+        cell!.textLabel?.text = UDPSocket.shared.hosts[indexPath.row]
+        return cell!
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        tf_client.text = UDPSocket.shared.hosts[indexPath.row]
+        tf_client.resignFirstResponder()
+    }
+    
     
 }
 

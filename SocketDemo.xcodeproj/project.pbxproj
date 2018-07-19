@@ -15,6 +15,7 @@
 		CD347ECD20EE19E90019AB81 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CD347ECB20EE19E90019AB81 /* LaunchScreen.storyboard */; };
 		CD347ED520EE1D890019AB81 /* SocketManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD347ED420EE1D890019AB81 /* SocketManager.swift */; };
 		CD347ED920EE22780019AB81 /* IPAddress.m in Sources */ = {isa = PBXBuildFile; fileRef = CD347ED820EE22780019AB81 /* IPAddress.m */; };
+		CD49F98E210083230045ACCB /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD49F98D210083230045ACCB /* UDPSocket.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		CD347ED620EE22780019AB81 /* SocketDemo-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SocketDemo-Bridging-Header.h"; sourceTree = "<group>"; };
 		CD347ED720EE22780019AB81 /* IPAddress.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IPAddress.h; sourceTree = "<group>"; };
 		CD347ED820EE22780019AB81 /* IPAddress.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = IPAddress.m; sourceTree = "<group>"; };
+		CD49F98D210083230045ACCB /* UDPSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSocket.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,6 +88,7 @@
 			children = (
 				CD347EC220EE19E80019AB81 /* AppDelegate.swift */,
 				CD347ED420EE1D890019AB81 /* SocketManager.swift */,
+				CD49F98D210083230045ACCB /* UDPSocket.swift */,
 				CD347ED720EE22780019AB81 /* IPAddress.h */,
 				CD347ED820EE22780019AB81 /* IPAddress.m */,
 				CD347EC420EE19E80019AB81 /* ViewController.swift */,
@@ -232,6 +235,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CD347EC520EE19E80019AB81 /* ViewController.swift in Sources */,
+				CD49F98E210083230045ACCB /* UDPSocket.swift in Sources */,
 				CD347ED920EE22780019AB81 /* IPAddress.m in Sources */,
 				CD347ED520EE1D890019AB81 /* SocketManager.swift in Sources */,
 				CD347EC320EE19E80019AB81 /* AppDelegate.swift in Sources */,

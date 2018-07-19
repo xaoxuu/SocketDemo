@@ -12,12 +12,12 @@ internal let margin = CGFloat(8)
 internal let padding10 = CGFloat(8)
 internal let padding4 = CGFloat(4)
 
-internal let cornerRadius = 12 as CGFloat
-internal let titleHeight = 36 as CGFloat
-internal let dragButtonHeight = 24 as CGFloat
+internal let cornerRadius = CGFloat(12)
+internal let titleHeight = CGFloat(36)
+internal let dragButtonHeight = CGFloat(24)
 
 internal let defaultInset = UIEdgeInsets.init(top: padding10, left: padding4, bottom: padding10, right: padding4)
-internal let bodyMaxHeight = 120 as CGFloat
+
 
 internal func topSafeMargin() -> CGFloat {
     if NoticeBoard.isIPhoneX {
@@ -51,6 +51,17 @@ internal func visible(_ view: UITextView?) -> UITextView?{
     }
 }
 
+private enum Tag: Int {
+    typealias RawValue = Int
+    
+    case iconView = 101
+    case titleView = 102
+    case actionButton = 103
+    case bodyView = 201
+    case dragButton = 301
+    
+}
+
 // MARK: - frame
 internal extension Notice {
     
@@ -64,6 +75,11 @@ internal extension Notice {
         
         self.contentView.frame = CGRect.init(x: 0, y: 0, width: frame.size.width, height: totalHeight)
         self.visualEffectView?.frame = self.contentView.bounds
+        if let p = progressLayer {
+            var f = p.frame
+            f.size.height = totalHeight
+            p.frame = f
+        }
         if self.frame.height != totalHeight {
             var f = self.frame
             f.size.height = totalHeight
@@ -94,9 +110,9 @@ internal extension Notice {
             } else {
                 bodyView?.textContainerInset = defaultInset
             }
-            f.size.height = bodyMaxHeight
+            f.size.height = max(bodyMaxHeight, 0)
             t1.frame = f
-            f.size.height = min(t1.contentSize.height, bodyMaxHeight)
+            f.size.height = min(t1.contentSize.height, max(bodyMaxHeight, 0))
             UIView.animate(withDuration: 0.38) {
                 t1.frame = f
             }
@@ -120,11 +136,15 @@ internal extension Notice {
     
 }
 
+@objcMembers
 open class Notice: UIWindow {
+
+    /// 当notice被移除时的通知
+    public static let didRemoved = NSNotification.Name.init("noticeDidRemoved")
+    
     public enum Theme {
         public typealias RawValue = UIColor
         case success, note, warning, error, normal
-        
         var rawValue : RawValue {
             var color = UIColor.white
             switch self {
@@ -141,28 +161,55 @@ open class Notice: UIWindow {
             }
             return color
         }
-        
-        var stringValue : String {
-            switch self {
-            case .success:
-                return "success"
-            case .note:
-                return "note"
-            case .warning:
-                return "warning"
-            case .error:
-                return "error"
-            default:
-                return "default"
-            }
-        }
         init () {
             self = .normal
         }
-        
+
     }
     
     // MARK: - public property
+    public var bodyMaxHeight = CGFloat(360) {
+        didSet {
+            updateContentFrame()
+        }
+    }
+    
+    /// 可通过手势移除通知
+    public var allowRemoveByGesture = true
+    
+    var workItem : DispatchWorkItem?
+    
+    /// 背景颜色
+    public var themeColor = UIColor.ax_blue {
+        didSet {
+            contentView.backgroundColor = themeColor
+            tintColor = themeColor.textColor()
+        }
+    }
+    
+    /// 模糊效果
+    public var blurEffectStyle: UIBlurEffectStyle? {
+        didSet {
+            if let blur = blurEffectStyle {
+                if self.visualEffectView == nil {
+                    let vev = UIVisualEffectView.init(frame: self.bounds)
+                    vev.effect = UIBlurEffect.init(style: blur)
+                    if blur == UIBlurEffectStyle.dark {
+                        tintColor = .white
+                    } else {
+                        tintColor = .black
+                    }
+                    vev.layer.masksToBounds = true
+                    self.contentView.insertSubview(vev, at: 0)
+                    if let pro = progressLayer {
+                        vev.layer.addSublayer(pro)
+                    }
+                    self.visualEffectView = vev
+                }
+            }
+        }
+    }
+    
     // MARK: subviews
     public var contentView = UIView()
     public var iconView : UIImageView?
@@ -174,10 +221,15 @@ open class Notice: UIWindow {
     public var actionButton: UIButton?
     public var progressLayer: CALayer?
     
+    
     // MARK: model
     public var title: String {
         get {
-            return (titleLabel?.text)!
+            if let t = titleLabel?.text {
+                return t
+            } else {
+                return ""
+            }
         }
         set {
             self.contentView.addSubview(loadTitleLabel())
@@ -205,7 +257,11 @@ open class Notice: UIWindow {
     }
     public var body: String {
         get {
-            return (bodyView?.text)!
+            if let t = bodyView?.text {
+                return t
+            } else {
+                return ""
+            }
         }
         set {
             self.contentView.addSubview(loadTextView())
@@ -307,59 +363,19 @@ open class Notice: UIWindow {
     
     // MARK: - public func
     
-    
-    /// 设置主题
-    ///
-    /// - Parameters:
-    ///   - backgroundColor: 背景色
-    ///   - textColor: 文本色
-    open func setTheme(backgroundColor: UIColor, textColor: UIColor){
-        contentView.backgroundColor = backgroundColor
-        tintColor = textColor
-    }
-    
-    /// 设置主题
-    ///
-    /// - Parameter theme: 主题
-    open func setTheme(_ theme: Theme) {
-        setTheme(backgroundColor: theme.rawValue, textColor: theme.rawValue.textColor())
-        tags.append(theme.stringValue)
-    }
-    
-    /// 设置主题
-    ///
-    /// - Parameter backgroundColor: 背景色
-    open func setTheme(_ color: UIColor) {
-        setTheme(backgroundColor: color, textColor: color.textColor())
-    }
-    
-    
-    /// 设置主题
-    ///
-    /// - Parameter effect: 模糊效果
-    open func setTheme(_ blurEffect: UIBlurEffectStyle){
-        let vev = UIVisualEffectView.init(frame: self.bounds)
-        vev.effect = UIBlurEffect.init(style: blurEffect)
-        if blurEffect == UIBlurEffectStyle.dark {
-            tintColor = .white
-        } else {
-            tintColor = .black
-        }
-        vev.layer.masksToBounds = true
-        self.contentView.insertSubview(vev, at: 0)
-        if let pro = progressLayer {
-            vev.layer.addSublayer(pro)
-        }
-        self.visualEffectView = vev
-    }
-    
     /// "→"按钮的事件
     ///
     /// - Parameter action: "→"按钮的事件
     open func actionButtonDidTapped(action: @escaping(Notice, UIButton) -> Void){
+        self.contentView.addSubview(loadActionButton())
+        updateContentFrame()
         block_action = action
     }
-    
+    open func removeFromNoticeBoard(){
+        if let b = board {
+            b.remove(self, animate: .slide)
+        }
+    }
     // MARK: - private func
     
     
@@ -390,6 +406,8 @@ open class Notice: UIWindow {
         }
         
     }
+
+    
     public override init(frame: CGRect) {
         
         super.init(frame: frame)
@@ -432,17 +450,22 @@ open class Notice: UIWindow {
     // MARK: - action
     @objc func touchDown(_ sender: UIButton) {
         debugPrint("touchDown: " + (sender.titleLabel?.text)!)
-        if sender.tag == 101 {
-            dragButton?.backgroundColor = UIColor.init(white: 0, alpha: 0.3)
+        if sender.tag == Tag.dragButton.rawValue {
+            sender.backgroundColor = UIColor.init(white: 0, alpha: 0.3)
+        } else if sender.tag == Tag.actionButton.rawValue {
+            
         }
     }
     @objc func touchUp(_ sender: UIButton) {
         debugPrint("touchUp: " + (sender.titleLabel?.text)!)
-        if sender.tag == 101 {
-            dragButton?.backgroundColor = UIColor.init(white: 0, alpha: 0.1)
+        if sender.tag == Tag.dragButton.rawValue {
+            sender.backgroundColor = UIColor.init(white: 0, alpha: 0.1)
+        } else if sender.tag == Tag.actionButton.rawValue {
+            
         }
     }
     @objc func touchUpInside(_ sender: UIButton) {
+        touchUp(sender)
         debugPrint("touchUpInside: " + (sender.titleLabel?.text)!)
         if sender == actionButton {
             if let action = block_action {
@@ -460,7 +483,7 @@ open class Notice: UIWindow {
         sender.setTranslation(.zero, in: sender.view)
         if sender.state == .recognized {
             let v = sender.velocity(in: sender.view)
-            if frame.origin.y + point.y < 0 || v.y < -1200 {
+            if allowRemoveByGesture == true && (frame.origin.y + point.y < 0 || v.y < -1200) {
                 if let b = self.board {
                     b.remove(self, animate: .slide)
                 }
@@ -525,6 +548,7 @@ internal extension Notice {
                 y = titleLabel.frame.maxY
             }
             bodyView = UITextView.init(frame: .init(x: 0, y: y, width: self.frame.size.width, height: self.frame.size.height-y))
+            bodyView?.tag = Tag.bodyView.rawValue
             bodyView?.font = UIFont.systemFont(ofSize: UIFont.systemFontSize)
             bodyView?.showsHorizontalScrollIndicator = false
             bodyView?.textAlignment = .justified
@@ -542,6 +566,7 @@ internal extension Notice {
             return view
         } else {
             iconView = UIImageView.init(frame: .init(x: padding10, y: 2*padding4, width: titleHeight-4*padding4, height: titleHeight-4*padding4))
+            iconView?.tag = Tag.iconView.rawValue
             iconView?.contentMode = .scaleAspectFit
             if debugMode {
                 iconView?.backgroundColor = UIColor.init(white: 0, alpha: 0.3)
@@ -557,10 +582,13 @@ internal extension Notice {
             return btn
         } else {
             actionButton = UIButton.init(frame: .init(x: self.frame.size.width-38, y: 0, width: 38, height: titleHeight))
+            actionButton?.tag = Tag.actionButton.rawValue
             actionButton?.setTitleColor(.black, for: .normal)
             actionButton?.setTitle("→", for: .normal)
             actionButton?.titleLabel?.font = UIFont.boldSystemFont(ofSize: 20)
             actionButton?.addTarget(self, action: #selector(self.touchUpInside(_:)), for: .touchUpInside)
+            actionButton?.addTarget(self, action: #selector(self.touchDown(_:)), for: [.touchDown,])
+            actionButton?.addTarget(self, action: #selector(self.touchUp(_:)), for: [.touchUpInside,.touchUpOutside])
             return actionButton!
         }
     }
@@ -572,9 +600,9 @@ internal extension Notice {
             return lb
         } else {
             titleLabel = UILabel.init(frame: .init(x: padding10, y: 0, width: self.frame.size.width-2*padding10, height: titleHeight))
+            titleLabel?.tag = Tag.titleView.rawValue
             titleLabel?.textAlignment = .justified
             titleLabel?.font = UIFont.boldSystemFont(ofSize: UIFont.labelFontSize-1)
-            self.contentView.addSubview(loadActionButton())
             if debugMode {
                 titleLabel?.backgroundColor = UIColor.init(white: 0, alpha: 0.2)
                 actionButton?.backgroundColor = UIColor.init(white: 1, alpha: 0.2)
@@ -591,7 +619,7 @@ internal extension Notice {
             progressLayer = CALayer.init()
             var f = self.contentView.bounds
             f.size.width = 0
-            f.size.height = titleHeight + bodyMaxHeight
+            f.size.height = titleHeight + max(bodyMaxHeight, 0)
             progressLayer?.frame = f
             progressLayer?.backgroundColor = UIColor.init(white: 0, alpha: 0.2).cgColor
             if let blur = visualEffectView {
@@ -609,10 +637,10 @@ internal extension Notice {
             return btn
         } else {
             dragButton = UIButton.init(frame: .init(x: 0, y: 0, width: self.frame.width, height: dragButtonHeight))
+            dragButton?.tag = Tag.dragButton.rawValue
             dragButton?.backgroundColor = UIColor.init(white: 0, alpha: 0.1)
             dragButton?.setTitle("——", for: .normal)
-            dragButton?.tag = 101
-            dragButton?.setTitleColor(self.backgroundColor, for: .normal)
+            dragButton?.setTitleColor(tintColor, for: .normal)
             dragButton?.addTarget(self, action: #selector(self.touchDown(_:)), for: [.touchDown,])
             dragButton?.addTarget(self, action: #selector(self.touchUp(_:)), for: [.touchUpInside,.touchUpOutside])
             return dragButton!
