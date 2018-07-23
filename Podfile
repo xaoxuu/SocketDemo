@@ -5,7 +5,7 @@ target 'SocketDemo' do
 
 pod 'CocoaAsyncSocket'
 pod 'AXKit'
-pod 'NoticeBoard', '1.0.2'
+pod 'NoticeBoard', '1.0.3'
 
 end
 
