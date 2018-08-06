@@ -1,18 +1,18 @@
 PODS:
-  - AXKit (0.3.3)
+  - AXKit (0.3.4)
   - CocoaAsyncSocket (7.6.3)
-  - NoticeBoard (1.0.3)
+  - NoticeBoard (1.1.2)
 
 DEPENDENCIES:
-  - AXKit
+  - AXKit (= 0.3.4)
   - CocoaAsyncSocket
-  - NoticeBoard (= 1.0.3)
+  - NoticeBoard (= 1.1.2)
 
 SPEC CHECKSUMS:
-  AXKit: 611fc436faeeae6e4501de5c9b75ffe61b5ae126
+  AXKit: b7c4246ca59c81a64b30d28d046a5c01a98e245a
   CocoaAsyncSocket: eafaa68a7e0ec99ead0a7b35015e0bf25d2c8987
-  NoticeBoard: 4a36eafd873cd1157ca77ad0acc1a9f293cb6453
+  NoticeBoard: 397d710b59d3876ce45235c6beeb08ca6173c2f6
 
-PODFILE CHECKSUM: 2c1e6c946a52ceba4b199581b24a5e75a32c49bc
+PODFILE CHECKSUM: 69023dfc7307bec484dd83fb364eaadfee63520b
 
 COCOAPODS: 1.4.0

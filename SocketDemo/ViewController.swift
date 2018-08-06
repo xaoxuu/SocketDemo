@@ -166,7 +166,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             }
         }
         
-        let message = Notice()
+        let message = Notice(theme: .normal)
         SocketManager.shared.onReceiveMessage { (host, str) in
             if let h = host {
                 message.title = h

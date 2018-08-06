@@ -1,6 +1,0 @@
-framework module NoticeBoard {
-  umbrella header "NoticeBoard-umbrella.h"
-
-  export *
-  module * { export * }
-}
