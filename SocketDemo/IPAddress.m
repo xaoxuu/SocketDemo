@@ -45,10 +45,9 @@ static inline NSString *deviceIPAdress() {
     freeifaddrs(interfaces);
     if (!address.length) {
 #if TARGET_IPHONE_SIMULATOR
-            address = @"10.8.12.24";
+            address = @"0.0.0.0";
 #endif
     }
-    NSLog(@"手机的IP是：%@", address);
     return address;
 }
 

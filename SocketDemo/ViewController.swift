@@ -15,6 +15,12 @@ enum SocketCharacter: Int {
     case client = 11
 }
 
+let dateFormatter : DateFormatter = {
+    let df = DateFormatter()
+    df.dateFormat = "yyyy-MM-dd HH:mm:ss"
+    return df
+}()
+
 class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
     
@@ -50,17 +56,17 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         tf_server.layer.cornerRadius = 4
         tf_client.layer.cornerRadius = 4
         tf_client.text = UserDefaults.standard.object(forKey: "ip") as? String
-        tf_ip.backgroundColor = UIColor.groupTableViewBackground
+        tf_ip.backgroundColor = UIColor.systemGroupedBackground
         tf_ip.alpha = 0.5
-        tf_server.layer.backgroundColor = UIColor.groupTableViewBackground.cgColor
+        tf_server.layer.backgroundColor = UIColor.systemGroupedBackground.cgColor
         tf_server.alpha = 0.5
-        tf_client.layer.backgroundColor = UIColor.white.cgColor
+        tf_client.layer.backgroundColor = UIColor.systemBackground.cgColor
         
-        chatView.isHidden = true
-        chatView.alpha = 0
+        chatView.isUserInteractionEnabled = false
+        chatView.alpha = 0.5
         
         var item = DispatchWorkItem.init {
-            self.chatView.isHidden = true
+            self.chatView.isUserInteractionEnabled = false
         }
         
         func reset(sw: UISwitch){
@@ -69,11 +75,11 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         }
         func resetTF() {
             UIView.animate(withDuration: 0.5) {
-                self.tf_server.layer.backgroundColor = UIColor.groupTableViewBackground.cgColor
+                self.tf_server.layer.backgroundColor = UIColor.systemGroupedBackground.cgColor
                 self.tf_server.layer.ax_removeColorAnimation()
                 self.tf_client.isEnabled = true
                 self.tf_client.alpha = 1
-                self.tf_client.layer.backgroundColor = UIColor.white.cgColor
+                self.tf_client.layer.backgroundColor = UIColor.systemBackground.cgColor
                 self.tf_client.layer.ax_removeColorAnimation()
             }
             
@@ -100,10 +106,10 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             func showChatView(_ show: Bool){
                 UIView.animate(withDuration: 0.5) {
                     if show {
-                        self.chatView.isHidden = false
+                        self.chatView.isUserInteractionEnabled = true
                         self.chatView.alpha = 1
                     } else {
-                        self.chatView.alpha = 0
+                        self.chatView.alpha = 0.5
                         self.tv_msg.resignFirstResponder()
                         item.cancel()
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)
@@ -196,18 +202,20 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     @IBAction func startServer(_ sender: UISwitch) {
         if sender.isOn {
+            self.log("request launch server")
             SocketManager.shared.startServer(host: tf_ip.text!)
             UIView.animate(withDuration: 0.5) {
                 self.tf_client.isEnabled = false
                 self.tf_client.alpha = 0.5
             }
         } else {
-            // 关闭服务
+            self.log("request close server")
             SocketManager.shared.endServer()
         }
     }
     @IBAction func connectServer(_ sender: UISwitch) {
         if sender.isOn {
+            self.log("request connect")
             UserDefaults.standard.set(tf_client.text, forKey: "ip")
             SocketManager.shared.connectServer(host: tf_client.text!)
             UIView.animate(withDuration: 0.5) {
@@ -215,6 +223,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                 self.tf_server.alpha = 0.5
             }
         } else {
+            self.log("request disconnect")
             SocketManager.shared.asyncSocket.disconnect()
         }
     }
@@ -288,7 +297,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     func log(_ str: String?) {
         if let s = str {
-            log.text = "[\(Date().description)]\n" + s + "\n\n" + (log.text ?? "")
+            log.text = "[\(dateFormatter.string(from: Date()))]\n" + s + "\n\n" + (log.text ?? "")
         }
     }
     
