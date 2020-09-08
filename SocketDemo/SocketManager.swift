@@ -9,7 +9,6 @@
 import UIKit
 import CocoaAsyncSocket
 import AXKit
-import NoticeBoard
 
 let kPort = UInt16(5528)
 
@@ -111,10 +110,6 @@ class SocketManager: NSObject, GCDAsyncSocketDelegate, GCDAsyncUdpSocketDelegate
         if let h = newSocket.connectedHost {
             connectedHosts[NSString.pointerDescription()(newSocket)] = h
         }
-//        let key = NSString.pointerDescription()(newSocket)
-//        if let ip = newSocket.connectedHost {
-//            ips[key] = ip
-//        }
         DispatchQueue.main.async {
             if let f = self.block_onConnect {
                 if let ip = newSocket.connectedHost {
@@ -157,7 +152,7 @@ class SocketManager: NSObject, GCDAsyncSocketDelegate, GCDAsyncUdpSocketDelegate
         if let h = host {
             connectedHosts.removeValue(forKey: h)
         }
-        if let idx = clientSockets.index(of: sock) {
+        if let idx = clientSockets.firstIndex(of: sock) {
             clientSockets.remove(at: idx)
         }
         DispatchQueue.main.async {

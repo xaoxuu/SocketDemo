@@ -4,8 +4,7 @@ use_frameworks!
 target 'SocketDemo' do
 
 pod 'CocoaAsyncSocket'
-pod 'AXKit', '0.3.4'
-pod 'NoticeBoard', '1.1.2'
+pod 'AXKit', '0.3.11'
 
 end
 

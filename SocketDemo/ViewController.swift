@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import NoticeBoard
+import ProHUD
 import AXKit
 
 enum SocketCharacter: Int {
@@ -36,6 +36,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     @IBOutlet weak var sw_client: UISwitch!
     
+    @IBOutlet weak var log: UITextView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -58,7 +59,6 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         chatView.isHidden = true
         chatView.alpha = 0
         
-        let msg = Notice()
         var item = DispatchWorkItem.init {
             self.chatView.isHidden = true
         }
@@ -135,11 +135,11 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                 reset(sw: self.sw_server)
                 reset(sw: self.sw_client)
                 resetTF()
-                NoticeBoard.post(.error, message: err.localizedDescription, duration: 3)
+                self.log("connect fail: \(err.localizedDescription)")
             } else {
                 onConnect(as: character)
                 updateState()
-                NoticeBoard.post(.success, message: "\(host) connected", duration: 3)
+                self.log("connect success: \(host) connected")
             }
         }
         SocketManager.shared.onDisconnect { (character, host) in
@@ -158,36 +158,28 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                 
             }
             if let i = host {
-                NoticeBoard.post(.warning, message: "\(i) disconnect from server", duration: 3)
+                self.log("disconnect: \(i) disconnect from server")
             } else if character == SocketCharacter.server {
-                NoticeBoard.post(.warning, message: "server closed", duration: 3)
+                self.log("server closed")
             } else {
-                NoticeBoard.post(.error, message: "disconnect from server", duration: 3)
+                self.log("disconnected")
             }
         }
         
-        let message = Notice(theme: .normal)
         SocketManager.shared.onReceiveMessage { (host, str) in
-            if let h = host {
-                message.title = h
-            }
-            if let s = str {
-                message.body = s
-            }
-            
-            message.actionButton?.isHidden = true
-            if NoticeBoard.shared.notices.contains(message) == false {
-                NoticeBoard.post(message, duration: 2)
+            ProHUD.Toast.push("msg", scene: .default) { (t) in
+                t.update { (vm) in
+                    vm.title = host
+                    vm.message = str
+                }
             }
             self.tv_msg.text = str
+            self.log("receive message: {host: \(host ?? ""), message: \(str ?? "")")
         }
         
-        let sharedNotice = Notice()
         NotificationCenter.default.addObserver(forName: UDPSocket.shared.didUpdate, object: nil, queue: .main) { (note) in
-            
-            sharedNotice.body = UDPSocket.shared.hosts.description
-            sharedNotice.blurEffectStyle = .light
-            NoticeBoard.post(sharedNotice, duration: 3)
+            print(note)
+            self.log("UDPSocket.shared.didUpdate: \(UDPSocket.shared.hosts.description)")
         }
         UDPSocket.shared.beginReceiving()
         
@@ -241,7 +233,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     @IBAction func more(_ sender: UIButton) {
         if let url = URL.init(string: (sender.titleLabel?.text)!) {
-            UIApplication.shared.openURL(url)
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
     }
     
@@ -293,6 +285,12 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         tf_client.resignFirstResponder()
     }
     
+    
+    func log(_ str: String?) {
+        if let s = str {
+            log.text = "[\(Date().description)]\n" + s + "\n\n" + (log.text ?? "")
+        }
+    }
     
 }
 
